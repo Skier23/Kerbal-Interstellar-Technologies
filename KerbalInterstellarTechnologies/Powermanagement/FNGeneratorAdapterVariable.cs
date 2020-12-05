@@ -2,13 +2,14 @@
 using KIT.Constants;
 using KIT.Power;
 using KIT.Resources;
+using KIT.ResourceScheduler;
 using KSP.Localization;
 using UnityEngine;
 
 namespace KIT.Powermanagement
 {
     [KSPModule("Generator Adapter")]
-    class FNGeneratorAdapterVariable : ResourceSuppliableModule
+    class FNGeneratorAdapterVariable : PartModule, IKITMod
     {
         [KSPField(groupName = FNGenerator.GROUP, groupDisplayName = FNGenerator.GROUP_TITLE, isPersistant = true, guiActiveEditor = false, guiActive = true, guiName = "#LOC_KSPIE_FNGeneratorAdapter_Powerinput", guiUnits = "#LOC_KSPIE_Reactor_megawattUnit", guiFormat = "F4")]//Power input
         public double powerGeneratorPowerInput;

@@ -1,5 +1,6 @@
 ﻿using KIT.Extensions;
 using KIT.Resources;
+using KIT.ResourceScheduler;
 using System;
 using System.Linq;
 using UnityEngine;
@@ -13,7 +14,7 @@ namespace KIT.Powermanagement
     class SuperLithiumBattery : KspiSuperCapacitator { }
 
     [KSPModule("Super Capacitator")]
-    class KspiSuperCapacitator : ResourceSuppliableModule
+    class KspiSuperCapacitator : PartModule, IKITMod
     {
         [KSPField(groupName = FNBatteryGenerator.GROUP, groupDisplayName = FNBatteryGenerator.GROUP_TITLE, isPersistant = false, guiActiveEditor = true, guiName = "#LOC_KSPIE_KspiSuperCapacitator_MaxCapacity", guiUnits = " MJe")]//Max Capacity
         public float maxStorageCapacityMJ = 0;

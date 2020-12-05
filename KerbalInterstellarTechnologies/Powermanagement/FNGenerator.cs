@@ -1,9 +1,9 @@
 using KIT.Constants;
 using KIT.Extensions;
-using KIT.Power;
 using KIT.Reactors;
 using KIT.Redist;
 using KIT.Resources;
+using KIT.ResourceScheduler;
 using KIT.Wasteheat;
 using KSP.Localization;
 using System;
@@ -32,7 +32,7 @@ namespace KIT.Powermanagement
     class ChargedParticlesPowerGenerator : FNGenerator {}
 
     [KSPModule(" Generator")]
-    class FNGenerator : ResourceSuppliableModule, IUpgradeableModule, IElectricPowerGeneratorSource, IPartMassModifier, IRescalable<FNGenerator>
+    class FNGenerator : PartModule, IKITMod, IUpgradeableModule, IElectricPowerGeneratorSource, IPartMassModifier, IRescalable<FNGenerator>
     {
         public const string GROUP = "FNGenerator";
         public const string GROUP_TITLE = "#LOC_KSPIE_Generator_groupName";
@@ -477,7 +477,7 @@ namespace KIT.Powermanagement
             {
                 OnEditorDetach();
 
-                RemoveItselfAsManager();
+                // RemoveItselfAsManager();
             }
             catch (Exception e)
             {
@@ -489,8 +489,8 @@ namespace KIT.Powermanagement
         {
             ConnectToModuleGenerator();
 
-            String[] resources_to_supply = { ResourceSettings.Config.ElectricPowerInMegawatt, ResourceSettings.Config.WasteHeatInMegawatt, ResourceSettings.Config.ThermalPowerInMegawatt, ResourceSettings.Config.ChargedParticleInMegawatt };
-            this.resources_to_supply = resources_to_supply;
+            // String[] resources_to_supply = { ResourceSettings.Config.ElectricPowerInMegawatt, ResourceSettings.Config.WasteHeatInMegawatt, ResourceSettings.Config.ThermalPowerInMegawatt, ResourceSettings.Config.ChargedParticleInMegawatt };
+            // this.resources_to_supply = resources_to_supply;
 
             base.OnStart(state);
 
@@ -1052,7 +1052,162 @@ namespace KIT.Powermanagement
             Fields[nameof(targetMass)].guiActive = attachedPowerSource != null && attachedPowerSource.Part != this.part;
         }
 
-        public override void OnFixedUpdateResourceSuppliable(double fixedDeltaTime)
+        public override void OnPostResourceSuppliable(double fixedDeltaTime)
+        {
+            double totalPowerReceived;
+
+            postThermalPowerReceived = 0;
+            postChargedPowerReceived = 0;
+
+            if (!chargedParticleMode) // thermal mode
+            {
+                if (attachedPowerSource.ChargedPowerRatio != 1)
+                {
+                    postThermalPowerReceived += consumeFNResourcePerSecond(requestedPostThermalPower, ResourceSettings.Config.ThermalPowerInMegawatt);
+                }
+
+                totalPowerReceived = thermalPowerReceived + chargedPowerReceived + postThermalPowerReceived;
+
+                // Collect charged power when needed
+                if (attachedPowerSource.ChargedPowerRatio == 1)
+                {
+                    postChargedPowerReceived += consumeFNResourcePerSecond(requestedPostReactorPower, ResourceSettings.Config.ChargedParticleInMegawatt);
+                }
+                else if (shouldUseChargedPower && totalPowerReceived < reactorPowerRequested)
+                {
+                    var postPowerRequest = Math.Min(Math.Min(requestedPostReactorPower - totalPowerReceived, maxChargedPowerForThermalGenerator), Math.Max(0, maxReactorPower - totalPowerReceived));
+
+                    postChargedPowerReceived += consumeFNResourcePerSecond(postPowerRequest, ResourceSettings.Config.ChargedParticleInMegawatt);
+                }
+            }
+            else // charged power mode
+            {
+                postChargedPowerReceived += consumeFNResourcePerSecond(requestedPostChargedPower, ResourceSettings.Config.ChargedParticleInMegawatt);
+            }
+
+            post_received_power_per_second = postThermalPowerReceived + postChargedPowerReceived;
+
+            postEffectiveInputPowerPerSecond = Math.Max(0, Math.Min(post_received_power_per_second * _totalEff, maximumElectricPower - electricdtps));
+
+            if (!CheatOptions.IgnoreMaxTemperature)
+                consumeFNResourcePerSecond(postEffectiveInputPowerPerSecond, ResourceSettings.Config.WasteHeatInMegawatt);
+
+            supplyManagedFNResourcePerSecond(postEffectiveInputPowerPerSecond, ResourceSettings.Config.ElectricPowerInMegawatt);
+        }
+
+        private void UpdateBuffers()
+        {
+            if (!maintainsMegaWattPowerBuffer)
+                return;
+
+            if (maxStableMegaWattPower > 0)
+            {
+                _powerState = PowerStates.PowerOnline;
+
+                stablePowerForBuffer = chargedParticleMode
+                       ? attachedPowerSource.ChargedPowerRatio * maxStableMegaWattPower
+                       : applies_balance ? (1 - attachedPowerSource.ChargedPowerRatio) * maxStableMegaWattPower : maxStableMegaWattPower;
+
+                powerBufferBonus = attachedPowerSource.PowerBufferBonus;
+
+                megawattBufferAmount = (minimumBufferSize * 50) + (powerBufferBonus + 1) * stablePowerForBuffer;
+            }
+        }
+
+        private double CalculateElectricalPowerCurrentlyNeeded()
+        {
+            megajouleBarRatio = getResourceBarRatio(ResourceSettings.Config.ElectricPowerInMegawatt);
+            megajoulePecentage = megajouleBarRatio * 100;
+
+            if (isLimitedByMinThrotle)
+                return attachedPowerSource.MinimumPower;
+
+            currentUnfilledResourceDemand = Math.Max(0, GetCurrentUnfilledResourceDemand(ResourceSettings.Config.ElectricPowerInMegawatt));
+
+            spareResourceCapacity = getSpareResourceCapacity(ResourceSettings.Config.ElectricPowerInMegawatt);
+            maxStableMegaWattPower = MaxStableMegaWattPower;
+
+            possibleSpareResourceCapacityFilling = Math.Min(spareResourceCapacity, maxStableMegaWattPower);
+
+            return Math.Min(maximumElectricPower, currentUnfilledResourceDemand + possibleSpareResourceCapacityFilling);
+        }
+
+        private void PowerDown()
+        {
+            if (_powerState != PowerStates.PowerOffline)
+            {
+                if (powerDownFraction > 0)
+                    powerDownFraction -= 0.01;
+
+                if (powerDownFraction <= 0)
+                    _powerState = PowerStates.PowerOffline;
+
+                megawattBufferAmount = (minimumBufferSize * 50) + (attachedPowerSource.PowerBufferBonus + 1) * maxStableMegaWattPower * powerDownFraction;
+            }
+            else
+            {
+                megawattBufferAmount = (minimumBufferSize * 50);
+            }
+        }
+
+        public override string GetInfo()
+        {
+            var sb = StringBuilderCache.Acquire();
+            sb.Append("<color=#7fdfffff>").Append(Localizer.Format("#LOC_KSPIE_Generator_upgradeTechnologies")).AppendLine("</color>");
+            sb.Append("<size=10>");
+
+            if (!string.IsNullOrEmpty(Mk2TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk2TechReq)));
+            if (!string.IsNullOrEmpty(Mk3TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk3TechReq)));
+            if (!string.IsNullOrEmpty(Mk4TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk4TechReq)));
+            if (!string.IsNullOrEmpty(Mk5TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk5TechReq)));
+            if (!string.IsNullOrEmpty(Mk6TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk6TechReq)));
+            if (!string.IsNullOrEmpty(Mk7TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk7TechReq)));
+            if (!string.IsNullOrEmpty(Mk8TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk8TechReq)));
+            if (!string.IsNullOrEmpty(Mk9TechReq))
+                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk9TechReq)));
+
+            sb.Append("</size><color=#7fdfffff>").Append(Localizer.Format("#LOC_KSPIE_Generator_conversionEfficiency")).AppendLine("</color>");
+            sb.Append("<size=10>Mk1: ").AppendLine(efficiencyMk1.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk2TechReq))
+                sb.Append("Mk2: ").AppendLine(efficiencyMk2.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk3TechReq))
+                sb.Append("Mk3: ").AppendLine(efficiencyMk3.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk4TechReq))
+                sb.Append("Mk4: ").AppendLine(efficiencyMk4.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk5TechReq))
+                sb.Append("Mk5: ").AppendLine(efficiencyMk5.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk6TechReq))
+                sb.Append("Mk6: ").AppendLine(efficiencyMk6.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk7TechReq))
+                sb.Append("Mk7: ").AppendLine(efficiencyMk7.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk8TechReq))
+                sb.Append("Mk8: ").AppendLine(efficiencyMk8.ToString("P0"));
+            if (!string.IsNullOrEmpty(Mk9TechReq))
+                sb.Append("Mk9: ").AppendLine(efficiencyMk9.ToString("P0"));
+            sb.Append("</size>");
+
+            return sb.ToStringAndRelease();
+        }
+
+
+        public ResourcePriorityValue ResourceProcessPriority()
+        {
+            if (isLimitedByMinThrotle)
+                return (ResourcePriorityValue) 1;
+
+            if (attachedPowerSource == null)
+                return ResourcePriorityValue.Third;
+
+            return (ResourcePriorityValue)attachedPowerSource.ProviderPowerPriority;
+        }
+        public void KITFixedUpdate(IResourceManager resMan)
         {
             if (IsEnabled && attachedPowerSource != null && FNRadiator.HasRadiatorsForVessel(vessel))
             {
@@ -1240,7 +1395,7 @@ namespace KIT.Powermanagement
                         ScreenMessages.PostScreenMessage(message, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                         PowerDown();
                     }
-                    else if ( !FNRadiator.HasRadiatorsForVessel(vessel))
+                    else if (!FNRadiator.HasRadiatorsForVessel(vessel))
                     {
                         IsEnabled = false;
                         var message = Localizer.Format("#LOC_KSPIE_Generator_Msg2");//"Generator Shutdown: No radiators available!"
@@ -1254,160 +1409,17 @@ namespace KIT.Powermanagement
                     PowerDown();
                 }
             }
+
         }
 
-
-        public override void OnPostResourceSuppliable(double fixedDeltaTime)
-        {
-            double totalPowerReceived;
-
-            postThermalPowerReceived = 0;
-            postChargedPowerReceived = 0;
-
-            if (!chargedParticleMode) // thermal mode
-            {
-                if (attachedPowerSource.ChargedPowerRatio != 1)
-                {
-                    postThermalPowerReceived += consumeFNResourcePerSecond(requestedPostThermalPower, ResourceSettings.Config.ThermalPowerInMegawatt);
-                }
-
-                totalPowerReceived = thermalPowerReceived + chargedPowerReceived + postThermalPowerReceived;
-
-                // Collect charged power when needed
-                if (attachedPowerSource.ChargedPowerRatio == 1)
-                {
-                    postChargedPowerReceived += consumeFNResourcePerSecond(requestedPostReactorPower, ResourceSettings.Config.ChargedParticleInMegawatt);
-                }
-                else if (shouldUseChargedPower && totalPowerReceived < reactorPowerRequested)
-                {
-                    var postPowerRequest = Math.Min(Math.Min(requestedPostReactorPower - totalPowerReceived, maxChargedPowerForThermalGenerator), Math.Max(0, maxReactorPower - totalPowerReceived));
-
-                    postChargedPowerReceived += consumeFNResourcePerSecond(postPowerRequest, ResourceSettings.Config.ChargedParticleInMegawatt);
-                }
-            }
-            else // charged power mode
-            {
-                postChargedPowerReceived += consumeFNResourcePerSecond(requestedPostChargedPower, ResourceSettings.Config.ChargedParticleInMegawatt);
-            }
-
-            post_received_power_per_second = postThermalPowerReceived + postChargedPowerReceived;
-
-            postEffectiveInputPowerPerSecond = Math.Max(0, Math.Min(post_received_power_per_second * _totalEff, maximumElectricPower - electricdtps));
-
-            if (!CheatOptions.IgnoreMaxTemperature)
-                consumeFNResourcePerSecond(postEffectiveInputPowerPerSecond, ResourceSettings.Config.WasteHeatInMegawatt);
-
-            supplyManagedFNResourcePerSecond(postEffectiveInputPowerPerSecond, ResourceSettings.Config.ElectricPowerInMegawatt);
-        }
-
-        private void UpdateBuffers()
-        {
-            if (!maintainsMegaWattPowerBuffer)
-                return;
-
-            if (maxStableMegaWattPower > 0)
-            {
-                _powerState = PowerStates.PowerOnline;
-
-                stablePowerForBuffer = chargedParticleMode
-                       ? attachedPowerSource.ChargedPowerRatio * maxStableMegaWattPower
-                       : applies_balance ? (1 - attachedPowerSource.ChargedPowerRatio) * maxStableMegaWattPower : maxStableMegaWattPower;
-
-                powerBufferBonus = attachedPowerSource.PowerBufferBonus;
-
-                megawattBufferAmount = (minimumBufferSize * 50) + (powerBufferBonus + 1) * stablePowerForBuffer;
-            }
-        }
-
-        private double CalculateElectricalPowerCurrentlyNeeded()
-        {
-            megajouleBarRatio = getResourceBarRatio(ResourceSettings.Config.ElectricPowerInMegawatt);
-            megajoulePecentage = megajouleBarRatio * 100;
-
-            if (isLimitedByMinThrotle)
-                return attachedPowerSource.MinimumPower;
-
-            currentUnfilledResourceDemand = Math.Max(0, GetCurrentUnfilledResourceDemand(ResourceSettings.Config.ElectricPowerInMegawatt));
-
-            spareResourceCapacity = getSpareResourceCapacity(ResourceSettings.Config.ElectricPowerInMegawatt);
-            maxStableMegaWattPower = MaxStableMegaWattPower;
-
-            possibleSpareResourceCapacityFilling = Math.Min(spareResourceCapacity, maxStableMegaWattPower);
-
-            return Math.Min(maximumElectricPower, currentUnfilledResourceDemand + possibleSpareResourceCapacityFilling);
-        }
-
-        private void PowerDown()
-        {
-            if (_powerState != PowerStates.PowerOffline)
-            {
-                if (powerDownFraction > 0)
-                    powerDownFraction -= 0.01;
-
-                if (powerDownFraction <= 0)
-                    _powerState = PowerStates.PowerOffline;
-
-                megawattBufferAmount = (minimumBufferSize * 50) + (attachedPowerSource.PowerBufferBonus + 1) * maxStableMegaWattPower * powerDownFraction;
-            }
-            else
-            {
-                megawattBufferAmount = (minimumBufferSize * 50);
-            }
-        }
-
-        public override string GetInfo()
-        {
-            var sb = StringBuilderCache.Acquire();
-            sb.Append("<color=#7fdfffff>").Append(Localizer.Format("#LOC_KSPIE_Generator_upgradeTechnologies")).AppendLine("</color>");
-            sb.Append("<size=10>");
-
-            if (!string.IsNullOrEmpty(Mk2TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk2TechReq)));
-            if (!string.IsNullOrEmpty(Mk3TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk3TechReq)));
-            if (!string.IsNullOrEmpty(Mk4TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk4TechReq)));
-            if (!string.IsNullOrEmpty(Mk5TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk5TechReq)));
-            if (!string.IsNullOrEmpty(Mk6TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk6TechReq)));
-            if (!string.IsNullOrEmpty(Mk7TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk7TechReq)));
-            if (!string.IsNullOrEmpty(Mk8TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk8TechReq)));
-            if (!string.IsNullOrEmpty(Mk9TechReq))
-                sb.Append("- ").AppendLine(Localizer.Format(PluginHelper.GetTechTitleById(Mk9TechReq)));
-
-            sb.Append("</size><color=#7fdfffff>").Append(Localizer.Format("#LOC_KSPIE_Generator_conversionEfficiency")).AppendLine("</color>");
-            sb.Append("<size=10>Mk1: ").AppendLine(efficiencyMk1.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk2TechReq))
-                sb.Append("Mk2: ").AppendLine(efficiencyMk2.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk3TechReq))
-                sb.Append("Mk3: ").AppendLine(efficiencyMk3.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk4TechReq))
-                sb.Append("Mk4: ").AppendLine(efficiencyMk4.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk5TechReq))
-                sb.Append("Mk5: ").AppendLine(efficiencyMk5.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk6TechReq))
-                sb.Append("Mk6: ").AppendLine(efficiencyMk6.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk7TechReq))
-                sb.Append("Mk7: ").AppendLine(efficiencyMk7.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk8TechReq))
-                sb.Append("Mk8: ").AppendLine(efficiencyMk8.ToString("P0"));
-            if (!string.IsNullOrEmpty(Mk9TechReq))
-                sb.Append("Mk9: ").AppendLine(efficiencyMk9.ToString("P0"));
-            sb.Append("</size>");
-
-            return sb.ToStringAndRelease();
-        }
-
-        public override string getResourceManagerDisplayName()
+        public string KITPartName()
         {
             if (isLimitedByMinThrotle)
-                return base.getResourceManagerDisplayName();
+                return part.partInfo.title;
 
             var displayName = part.partInfo.title + " " + Localizer.Format("#LOC_KSPIE_Generator_partdisplay");//(generator)
 
+            /* 
             if (similarParts == null)
             {
                 similarParts = vessel.parts.Where(m => m.partInfo.title == this.part.partInfo.title).ToList();
@@ -1416,24 +1428,9 @@ namespace KIT.Powermanagement
 
             if (similarParts.Count > 1)
                 displayName += " " + partNrInList;
+            */
 
             return displayName;
-        }
-
-        public override int getPowerPriority()
-        {
-            return 0;
-        }
-
-        public override int getSupplyPriority()
-        {
-            if (isLimitedByMinThrotle)
-                return 1;
-
-            if (attachedPowerSource == null)
-                return base.getPowerPriority();
-
-            return attachedPowerSource.ProviderPowerPriority;
         }
     }
 }

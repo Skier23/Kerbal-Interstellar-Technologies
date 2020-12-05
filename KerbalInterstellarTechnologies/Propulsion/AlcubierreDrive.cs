@@ -6,6 +6,7 @@ using KIT.Extensions;
 using KIT.Power;
 using KIT.Powermanagement;
 using KIT.Resources;
+using KIT.ResourceScheduler;
 using KIT.Wasteheat;
 using KSP.Localization;
 using UnityEngine;
@@ -14,7 +15,7 @@ using static System.String;
 namespace KIT.Propulsion
 {
     [KSPModule("#LOC_KSPIE_AlcubierreDrive_partModuleName")]
-    class AlcubierreDrive : ResourceSuppliableModule
+    class AlcubierreDrive : PartModule, IKITMod
     {
         public const string GROUP = "AlcubierreDrive";
         public const string GROUP_TITLE = "#LOC_KSPIE_AlcubierreDrive_groupName";
@@ -1945,6 +1946,21 @@ namespace KIT.Propulsion
             }
 
             return minimumDistance;
+        }
+
+        public ResourcePriorityValue ResourceProcessPriority()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void KITFixedUpdate(IResourceManager resMan)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string KITPartName()
+        {
+            throw new NotImplementedException();
         }
     }
 }
