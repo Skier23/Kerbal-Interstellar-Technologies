@@ -119,7 +119,7 @@ namespace KIT.ResourceScheduler
         /// </summary>
         /// <param name="name"></param>
         /// <param name="requestedAmount"></param>
-        /// <returns></returns>
+        /// <returns>bool - indicating if this module should be called again this KITFixedUpdate() cycle.</returns>
         bool ProvideResource(IResourceManager resMan, ResourceName resource, double requestedAmount);
     }
 

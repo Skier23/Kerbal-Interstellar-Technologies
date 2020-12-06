@@ -62,12 +62,16 @@ namespace KIT.Refinery.Activity
             }
             else
             {
-                _ammoniaConsumptionMassRate = _part.RequestResource(ResourceSettings.Config.AmmoniaLqd, _currentMassRate / _ammoniaDensity, ResourceFlowMode.ALL_VESSEL) /  _ammoniaDensity;
+                var tmp = resMan.ConsumeResource(ResourceName.AmmoniaLqd, _currentMassRate / _ammoniaDensity);
+                _ammoniaConsumptionMassRate = _currentMassRate * (tmp / (_currentMassRate / _ammoniaDensity));
+                
                 var hydrogenMassRate = _ammoniaConsumptionMassRate * GameConstants.ammoniaHydrogenFractionByMass;
                 var nitrogenMassRate = _ammoniaConsumptionMassRate * (1 - GameConstants.ammoniaHydrogenFractionByMass);
 
-                _hydrogenProductionMassRate = -_part.RequestResource(ResourceSettings.Config.HydrogenLqd, -hydrogenMassRate / _hydrogenDensity, ResourceFlowMode.ALL_VESSEL) /  _hydrogenDensity;
-                _nitrogenProductionMassRate = -_part.RequestResource(ResourceSettings.Config.NitrogenLqd, -nitrogenMassRate / _nitrogenDensity, ResourceFlowMode.ALL_VESSEL) /  _nitrogenDensity;
+                _hydrogenProductionMassRate = hydrogenMassRate;
+                resMan.ProduceResource(ResourceName.HydrogenLqd, hydrogenMassRate / _hydrogenDensity);
+                _nitrogenProductionMassRate = nitrogenMassRate;
+                resMan.ProduceResource(ResourceName.NitrogenLqd, nitrogenMassRate / _nitrogenDensity);
             }
 
             UpdateStatusMessage();
