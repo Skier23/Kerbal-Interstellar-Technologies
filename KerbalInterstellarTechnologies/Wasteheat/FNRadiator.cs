@@ -1,7 +1,5 @@
 using KIT.Constants;
 using KIT.Extensions;
-using KIT.Power;
-using KIT.Powermanagement;
 using KIT.Propulsion;
 using KIT.Resources;
 using KIT.ResourceScheduler;

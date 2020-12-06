@@ -921,10 +921,7 @@ namespace KIT.Beamedpower
             return info.ToStringAndRelease();
         }
 
-        public ResourcePriorityValue ResourceProcessPriority()
-        {
-            throw new NotImplementedException();
-        }
+        public ResourcePriorityValue ResourceProcessPriority() => ResourcePriorityValue.Fifth;
 
         public void KITFixedUpdate(IResourceManager resMan)
         {
@@ -942,6 +939,9 @@ namespace KIT.Beamedpower
 
             base.OnFixedUpdate();
 
+
+            throw new Exception("what is a stable supply of power?");
+            /*
             if (activeBeamGenerator != null && IsEnabled && !relay)
             {
                 double powerTransmissionRatio = (double)(decimal)transmitPower / 100d;
@@ -983,11 +983,9 @@ namespace KIT.Beamedpower
 
             if (double.IsInfinity(solar_power) || double.IsNaN(solar_power) || solar_power < 0)
                 solar_power = 0;
+            */
         }
 
-        public string KITPartName()
-        {
-            throw new NotImplementedException();
-        }
+        public string KITPartName() => part.partInfo.title;
     }
 }

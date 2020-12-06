@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace KIT.Powermanagement
 {
+    /*
     [KSPModule("Air Lithium Battery")]
     class AirLithiumBattery : KspiSuperCapacitator { }
 
@@ -128,4 +129,6 @@ namespace KIT.Powermanagement
             partMass = part.mass;
         }
     }
+
+    */
 }

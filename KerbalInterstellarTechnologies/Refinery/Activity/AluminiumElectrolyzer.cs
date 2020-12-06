@@ -1,6 +1,7 @@
 ﻿using KIT.Constants;
 using KIT.Extensions;
 using KIT.Resources;
+using KIT.ResourceScheduler;
 using KSP.Localization;
 using System.Linq;
 using UnityEngine;
@@ -51,7 +52,7 @@ namespace KIT.Refinery.Activity
             _oxygenDensity = PartResourceLibrary.Instance.GetDefinition(_oxygenResourceName).density;
         }
 
-        public void UpdateFrame(double rateMultiplier, double powerFraction, double productionModifier, bool allowOverflow, bool isStartup = false)
+        public void UpdateFrame(IResourceManager resMan, double rateMultiplier, double powerFraction, double productionModifier, bool allowOverflow, bool isStartup = false)
         {
             _effectivePowerRequirements = productionModifier * PowerRequirements;
             _current_power = powerFraction * _effectivePowerRequirements;

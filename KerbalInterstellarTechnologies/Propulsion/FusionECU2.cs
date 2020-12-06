@@ -1,9 +1,6 @@
 ﻿using KIT.Constants;
 using KIT.External;
-using KIT.Power;
-using KIT.Resources;
 using KIT.ResourceScheduler;
-using KIT.Wasteheat;
 using KSP.Localization;
 using System;
 using System.Collections.Generic;

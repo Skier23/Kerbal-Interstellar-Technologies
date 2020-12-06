@@ -107,7 +107,8 @@ namespace KIT.Powermanagement
                   Math.Pow(hotColdBathRatio * (1 / requiredTemperatureRatio), hotColdBathRatioExponent);
 
             // TODO 
-            var currentUnfilledResourceDemand = Math.Max(0, GetCurrentUnfilledResourceDemand(ResourceSettings.Config.ElectricPowerInMegawatt));
+            // var currentUnfilledResourceDemand = Math.Max(0, GetCurrentUnfilledResourceDemand(ResourceSettings.Config.ElectricPowerInMegawatt));
+            double currentUnfilledResourceDemand = 10000;
 
             var requiredRatio = Math.Min(1, currentUnfilledResourceDemand / maximumPowerSupplyInMegaWatt);
 

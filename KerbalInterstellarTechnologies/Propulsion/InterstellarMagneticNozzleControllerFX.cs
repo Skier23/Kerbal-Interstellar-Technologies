@@ -517,7 +517,8 @@ namespace KIT.Propulsion
                         _previous_charged_particles_received = 0;
                     }
 
-                    resMan.ConsumeResource(ResourceName.WasteHeat, WasteHeatInMegawatt * GameConstants.ecPerMJ);
+                    // TODO track this down. resMan.ConsumeResource(ResourceName.WasteHeat, WasteHeatInMegawatt * GameConstants.ecPerMJ);
+                    resMan.ConsumeResource(ResourceName.WasteHeat, wasteheatConsumption);
                 }
 
                 if (_charged_particles_received == 0)

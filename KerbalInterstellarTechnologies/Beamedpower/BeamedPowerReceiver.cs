@@ -2,7 +2,6 @@
 using KIT.Constants;
 using KIT.Extensions;
 using KIT.Microwave;
-using KIT.Power;
 using KIT.Propulsion;
 using KIT.Redist;
 using KIT.Resources;
@@ -540,7 +539,10 @@ namespace KIT
                 if (!HighLogic.LoadedSceneIsFlight || CheatOptions.IgnoreMaxTemperature || isThermalReceiver)
                     return 1;
 
-                var wasteheatRatio = getResourceBarRatio(ResourceSettings.Config.WasteHeatInMegawatt);
+                // TODO may this better.. OnAwake, set the ResourceName id?
+                // var wasteheatRatio = getResourceBarRatio(ResourceSettings.Config.WasteHeatInMegawatt);
+                part.GetConnectedResourceTotals("WasteHeat".GetHashCode(), out var amount, out var max);
+                wasteheatRatio = amount / max;
 
                 return 1 - wasteheatRatio * wasteheatRatio;
             }
@@ -705,7 +707,7 @@ namespace KIT
 
         public bool ShouldApplyBalance(ElectricGeneratorType generatorType) { return false; }
 
-        public override void AttachThermalReciever(Guid key, double radius)
+        public void AttachThermalReciever(Guid key, double radius)
         {
             if (!connectedRecievers.ContainsKey(key))
             {
@@ -719,7 +721,7 @@ namespace KIT
 
         public void Refresh() { }
 
-        public override void DetachThermalReciever(Guid key)
+        public void DetachThermalReciever(Guid key)
         {
             if (connectedRecievers.ContainsKey(key))
             {
@@ -729,7 +731,7 @@ namespace KIT
             }
         }
 
-        public override double GetFractionThermalReciever(Guid key)
+        public double GetFractionThermalReciever(Guid key)
         {
             return connectedRecieversFraction.TryGetValue(key, out double result) ? result : 0.0;
         }
@@ -2148,17 +2150,26 @@ namespace KIT
                             var thermalEngineThrottleRatio = connectedEngines.Any(m => !m.RequiresChargedPower) ? connectedEngines.Where(m => !m.RequiresChargedPower).Max(e => e.CurrentThrottle) : 0;
                             var minimumRatio = Math.Max(minimumConsumptionPercentage / 100d, Math.Max(storedGeneratorThermalEnergyRequestRatio, thermalEngineThrottleRatio));
 
-                            var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_thermal_power_provided, total_thermal_power_provided_max, minimumRatio, ResourceSettings.Config.ThermalPowerInMegawatt);
+                            // TODO - max resource settings
+                            //var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_thermal_power_provided, total_thermal_power_provided_max, minimumRatio, ResourceSettings.Config.ThermalPowerInMegawatt);
 
+                            resMan.ProduceResource(ResourceName.ThermalPower, total_thermal_power_provided);
+                            var powerGeneratedResult = total_thermal_power_provided;
+                            
                             if (!CheatOptions.IgnoreMaxTemperature)
                             {
-                                var supplyRatio = powerGeneratedResult.CurrentSupply / total_thermal_power_provided;
-                                var finalThermalWasteheat = powerGeneratedResult.CurrentSupply + supplyRatio * total_conversion_waste_heat_production;
+                                // TODO fix me.
+                                // var supplyRatio = powerGeneratedResult.CurrentSupply / total_thermal_power_provided;
+                                // var finalThermalWasteheat = powerGeneratedResult.CurrentSupply + supplyRatio * total_conversion_waste_heat_production;
 
-                                supplyFNResourcePerSecondWithMax(finalThermalWasteheat, total_thermal_power_provided_max, ResourceSettings.Config.WasteHeatInMegawatt);
+                                // supplyFNResourcePerSecondWithMax(finalThermalWasteheat, total_thermal_power_provided_max, ResourceSettings.Config.WasteHeatInMegawatt);
+                                resMan.ProduceResource(ResourceName.WasteHeat, total_thermal_power_provided);
                             }
 
-                            thermal_power_ratio = total_thermal_power_available > 0 ? powerGeneratedResult.CurrentSupply / total_thermal_power_available : 0;
+                            // TODO fix me
+                            // thermal_power_ratio = total_thermal_power_available > 0 ? powerGeneratedResult.CurrentSupply / total_thermal_power_available : 0;
+
+                            thermal_power_ratio = 1;
 
                             foreach (var item in received_power)
                             {
@@ -2199,14 +2210,19 @@ namespace KIT
                         var minimumRequestedPower = MaximumRecievePower * (minimumConsumptionPercentage / 100d);
                         var calculatedMinimumRatio = Math.Min(1, minimumRequestedPower / total_beamed_electric_power_provided);
 
-                        var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_beamed_electric_power_provided, total_beamed_electric_power_provided, calculatedMinimumRatio, ResourceSettings.Config.ElectricPowerInMegawatt);
-                        var supply_ratio = powerGeneratedResult.CurrentProvided / total_beamed_electric_power_provided;
+                        // TODO what
+                        // var powerGeneratedResult = managedPowerSupplyPerSecondMinimumRatio(total_beamed_electric_power_provided, total_beamed_electric_power_provided, calculatedMinimumRatio, ResourceSettings.Config.ElectricPowerInMegawatt);
+                        // var supply_ratio = powerGeneratedResult.CurrentProvided / total_beamed_electric_power_provided;
+
+                        var powerGeneratedResult = total_beamed_electric_power_provided;
+                        var supply_ratio = 1;
+                        resMan.ProduceResource(ResourceName.ElectricCharge, total_beamed_electric_power_provided);
 
                         // only generate wasteheat from beamed power when actualy using the energy
                         if (!CheatOptions.IgnoreMaxTemperature)
                         {
                             var solarWasteheat = thermalSolarInputMegajoules * (1 - effectiveSolarThermalElectricEfficiency);
-                            supplyFNResourcePerSecond(supply_ratio * total_conversion_waste_heat_production + supply_ratio * solarWasteheat, ResourceSettings.Config.WasteHeatInMegawatt);
+                            resMan.ProduceResource(ResourceName.WasteHeat, supply_ratio * total_conversion_waste_heat_production + supply_ratio * solarWasteheat * GameConstants.ecPerMJ);
                         }
 
                         foreach (var item in received_power)

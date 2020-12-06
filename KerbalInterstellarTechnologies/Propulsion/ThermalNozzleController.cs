@@ -1,11 +1,9 @@
 ﻿using KIT.Constants;
 using KIT.Extensions;
 using KIT.Interfaces;
-using KIT.Power;
 using KIT.Powermanagement;
 using KIT.Resources;
 using KIT.ResourceScheduler;
-using KIT.Wasteheat;
 using KSP.Localization;
 using System;
 using System.Collections.Generic;
@@ -156,7 +154,7 @@ namespace KIT.Propulsion
         [KSPField] public string EffectNameLFO;
         [KSPField] public string EffectNameNonLFO;
         [KSPField] public string EffectNameLithium;
-        [KSPField] public string EffectNameSpool;
+        [KSPField] public string EffectNameSpool = "";
         [KSPField] public string runningEffectNameLFO;
         [KSPField] public string runningEffectNameNonLFO;
         [KSPField] public string powerEffectNameLFO;
@@ -374,8 +372,8 @@ namespace KIT.Propulsion
 
         //Internal
         private string _flameoutText;
-        private string _powerEffectNameParticleFx;
-        private string _runningEffectNameParticleFx;
+        private string _powerEffectNameParticleFX;
+        private string _runningEffectNameParticleFX;
         private string _fuelTechRequirement;
 
         private double _heatDecompositionFraction;
@@ -392,7 +390,7 @@ namespace KIT.Propulsion
         private float _jetTechBonusPercentage;
         private float _jetTechBonusCurveChange;
 
-        private int _windowId;
+        private int _windowID;
         private int _switches;
 
         private bool _fuelRequiresUpgrade;
@@ -430,7 +428,7 @@ namespace KIT.Propulsion
         private List<ThermalEngineFuel> _allThermalEngineFuels;
         private List<ThermalEngineFuel> _compatibleThermalEngineFuels;
 
-        private Rect _windowPosition;
+        private Rect windowPosition;
 
         private IFNPowerSource _myAttachedReactor;
         public IFNPowerSource AttachedReactor
@@ -616,8 +614,8 @@ namespace KIT.Propulsion
             _windowID = new System.Random(part.GetInstanceID()).Next(int.MaxValue);
             windowPosition = new Rect(windowPositionX, windowPositionY, windowWidth, 10);
 
-            _windowId = new System.Random(part.GetInstanceID()).Next(int.MaxValue);
-            _windowPosition = new Rect(windowPositionX, windowPositionY, windowWidth, 10);
+            _windowID = new System.Random(part.GetInstanceID()).Next(int.MaxValue);
+            windowPosition = new Rect(windowPositionX, windowPositionY, windowWidth, 10);
 
             _flameoutText = Localizer.Format("#autoLOC_219016");
 
@@ -789,33 +787,33 @@ namespace KIT.Propulsion
             if (_propellantIsLFO)
             {
                 if (!string.IsNullOrEmpty(powerEffectNameLFO))
-                    _powerEffectNameParticleFx = powerEffectNameLFO;
+                    _powerEffectNameParticleFX = powerEffectNameLFO;
                 else  if (!string.IsNullOrEmpty(EffectNameLFO))
-                    _powerEffectNameParticleFx = EffectNameLFO;
+                    _powerEffectNameParticleFX = EffectNameLFO;
 
                 if (!string.IsNullOrEmpty(runningEffectNameLFO))
-                    _runningEffectNameParticleFx = runningEffectNameLFO;
+                    _runningEffectNameParticleFX = runningEffectNameLFO;
             }
             else if (_currentPropellantIsJet && !string.IsNullOrEmpty(EffectNameJet))
             {
-                _powerEffectNameParticleFx = EffectNameJet;
+                _powerEffectNameParticleFX = EffectNameJet;
             }
             else if (_isNeutronAbsorber)
             {
                 if (!string.IsNullOrEmpty(EffectNameLithium))
-                    _powerEffectNameParticleFx = EffectNameLithium;
+                    _powerEffectNameParticleFX = EffectNameLithium;
                 else if (!string.IsNullOrEmpty(EffectNameLFO))
-                    _powerEffectNameParticleFx = EffectNameLFO;
+                    _powerEffectNameParticleFX = EffectNameLFO;
             }
             else
             {
                 if (!string.IsNullOrEmpty(powerEffectNameNonLFO))
-                    _powerEffectNameParticleFx = powerEffectNameNonLFO;
+                    _powerEffectNameParticleFX = powerEffectNameNonLFO;
                 else if (!string.IsNullOrEmpty(EffectNameNonLFO))
-                    _powerEffectNameParticleFx = EffectNameNonLFO;
+                    _powerEffectNameParticleFX = EffectNameNonLFO;
 
                 if (!string.IsNullOrEmpty(runningEffectNameNonLFO))
-                    _runningEffectNameParticleFx = runningEffectNameNonLFO;
+                    _runningEffectNameParticleFX = runningEffectNameNonLFO;
             }
         }
 
@@ -1512,22 +1510,22 @@ namespace KIT.Propulsion
 
                 if (pulseDuration > 0 && myAttachedEngine is ModuleEnginesFX)
                 {
-                    if (!string.IsNullOrEmpty(_powerEffectNameParticleFx))
+                    if (!string.IsNullOrEmpty(_powerEffectNameParticleFX))
                     {
                         powerEffectRatio = increase > 0 && expectedMaxThrust > 0 && myAttachedEngine.currentThrottle > 0 && _currentAnimationRatio < pulseDuration
                             ? 1 - _currentAnimationRatio / pulseDuration
                             : 0;
 
-                        part.Effect(_powerEffectNameParticleFx, powerEffectRatio);
+                        part.Effect(_powerEffectNameParticleFX, powerEffectRatio);
                     }
 
-                    if (!string.IsNullOrEmpty(_runningEffectNameParticleFx))
+                    if (!string.IsNullOrEmpty(_runningEffectNameParticleFX))
                     {
                         runningEffectRatio = increase > 0 && expectedMaxThrust > 0 && myAttachedEngine.currentThrottle > 0 && _currentAnimationRatio < pulseDuration
                             ? 1 - _currentAnimationRatio / pulseDuration
                             : 0;
 
-                        part.Effect(_runningEffectNameParticleFx, runningEffectRatio);
+                        part.Effect(_runningEffectNameParticleFX, runningEffectRatio);
                     }
 
                 }
@@ -1550,9 +1548,11 @@ namespace KIT.Propulsion
 
         private double CalculateElectricalPowerCurrentlyNeeded(double maximumElectricPower)
         {
-            var currentUnfilledResourceDemand = Math.Max(0, GetCurrentUnfilledResourceDemand(ResourceSettings.Config.ElectricPowerInMegawatt));
-            var spareResourceCapacity = getSpareResourceCapacity(ResourceSettings.Config.ElectricPowerInMegawatt);
-            return Math.Min(maximumElectricPower, (currentUnfilledResourceDemand + spareResourceCapacity) * mhdPowerGenerationPercentage * 0.01);
+            // TODO - fix this
+            //var currentUnfilledResourceDemand = Math.Max(0, GetCurrentUnfilledResourceDemand(ResourceSettings.Config.ElectricPowerInMegawatt));
+            //var spareResourceCapacity = getSpareResourceCapacity(ResourceSettings.Config.ElectricPowerInMegawatt);
+            //return Math.Min(maximumElectricPower, (currentUnfilledResourceDemand + spareResourceCapacity) * mhdPowerGenerationPercentage * 0.01);
+            return 0;
         }
 
         private void GenerateThrustFromReactorHeat(IResourceManager resMan)
@@ -1563,11 +1563,12 @@ namespace KIT.Propulsion
             if (requiredMegajouleRatio > 0)
             {
                 var requested_megajoules = (availableThermalPower + availableChargedPower) * requiredMegajouleRatio * AttachedReactor.MagneticNozzlePowerMult;
-                var received_megajoules = resMan.ConsumeResource(ResourceName.ElectricCharge, requested_megajoules * GameConstants.ecPerMJ);
-                received_megajoules_ratio = requested_megajoules > 0 ? received_megajoules / requested_megajoules : 0;
+                var availablePower = resMan.ConsumeResource(ResourceName.ElectricCharge, requested_megajoules * GameConstants.ecPerMJ);
+                receivedMegajoulesRatio = requested_megajoules > 0 ? availablePower / requested_megajoules : 0;
 
                 requestedElectricPowerMegajoules = availablePower * requiredMegajouleRatio * AttachedReactor.MagneticNozzlePowerMult;
-                var receivedMegajoules = consumeFNResourcePerSecond(requestedElectricPowerMegajoules, ResourceSettings.Config.ElectricPowerInMegawatt);
+                //var receivedMegajoules = consumeFNResourcePerSecond(requestedElectricPowerMegajoules, ResourceSettings.Config.ElectricPowerInMegawatt);
+                var receivedMegajoules = resMan.ConsumeResource(ResourceName.ElectricCharge, requestedElectricPowerMegajoules * GameConstants.ecPerMJ);
                 requiredElectricalPowerFromMhd = CalculateElectricalPowerCurrentlyNeeded(availablePower * requiredMegajouleRatio * 2);
                 var electricalPowerCurrentlyNeedRatio = availablePower > 0 ? Math.Min(1, requiredElectricalPowerFromMhd / requestedElectricPowerMegajoules) : 0;
                 receivedMegajoulesRatio = Math.Min(1, Math.Max(electricalPowerCurrentlyNeedRatio, requestedElectricPowerMegajoules > 0 ? receivedMegajoules / requestedElectricPowerMegajoules : 0));
@@ -1585,7 +1586,7 @@ namespace KIT.Propulsion
 
             if (currentMaxChargedPower > 0)
             {
-                requested_charge_particles = received_megajoules_ratio * availableChargedPower;
+                requested_charge_particles = receivedMegajoulesRatio * availableChargedPower;
                 reactor_power_received += resMan.ConsumeResource(ResourceName.ChargedParticle, requested_charge_particles);
             }
             else
@@ -1593,7 +1594,7 @@ namespace KIT.Propulsion
 
             mhdTrustIspModifier = 1 - requiredMhdEnergyRatio;
 
-            GetMaximumIspAndThrustMultiplier();
+            GetMaximumIspAndThrustMultiplier(resMan);
             UpdateSootAccumulation();
 
             // consume wasteheat
@@ -1790,16 +1791,16 @@ namespace KIT.Propulsion
             maxEngineFuelFlow = myAttachedEngine.maxThrust > minimumThrust ? maxThrustOnEngine / realIspEngine / GameConstants.STANDARD_GRAVITY : 0;
             fuelEffectRatio = currentMassFlow / maxEngineFuelFlow;
 
-            if (!string.IsNullOrEmpty(_powerEffectNameParticleFx))
+            if (!string.IsNullOrEmpty(_powerEffectNameParticleFX))
             {
                 powerEffectRatio = maxEngineFuelFlow > 0 ? (float)(exhaustModifier * Math.Min(myAttachedEngine.currentThrottle, fuelEffectRatio)) : 0;
-                part.Effect(_powerEffectNameParticleFx, powerEffectRatio);
+                part.Effect(_powerEffectNameParticleFX, powerEffectRatio);
             }
 
-            if (!string.IsNullOrEmpty(_runningEffectNameParticleFx))
+            if (!string.IsNullOrEmpty(_runningEffectNameParticleFX))
             {
                 runningEffectRatio = maxEngineFuelFlow > 0 ? (float)(exhaustModifier * Math.Min(myAttachedEngine.requestedThrottle, fuelEffectRatio)) : 0;
-                part.Effect(_runningEffectNameParticleFx, powerEffectRatio);
+                part.Effect(_runningEffectNameParticleFX, powerEffectRatio);
             }
 
             UpdateThrottleAnimation(Math.Max(powerEffectRatio, runningEffectRatio));
@@ -1976,7 +1977,7 @@ namespace KIT.Propulsion
             return returnStr.ToStringAndRelease();
         }
 
-        public static ConfigNode[] getPropellants(bool isJet)
+        public static ConfigNode[] GetPropellants(bool isJet)
         {
             ConfigNode[] propellantList = isJet
                 ? GameDatabase.Instance.GetConfigNodes("ATMOSPHERIC_NTR_PROPELLANT")
@@ -2085,15 +2086,15 @@ namespace KIT.Propulsion
         public void OnGUI()
         {
             if (vessel == FlightGlobals.ActiveVessel && render_window)
-                _windowPosition = GUILayout.Window(_windowId, _windowPosition, Window, part.partInfo.title);
+                windowPosition = GUILayout.Window(_windowID, windowPosition, Window, part.partInfo.title);
         }
 
         private void Window(int windowId)
         {
-            windowPositionX = _windowPosition.x;
-            windowPositionY = _windowPosition.y;
+            windowPositionX = windowPosition.x;
+            windowPositionY = windowPosition.y;
 
-            if (GUI.Button(new Rect(_windowPosition.width - 20, 2, 18, 18), "x"))
+            if (GUI.Button(new Rect(windowPosition.width - 20, 2, 18, 18), "x"))
             {
                 render_window = false;
             }
@@ -2201,8 +2202,13 @@ namespace KIT.Propulsion
 
             effectiveThrustFraction = GetHeatExchangerThrustMultiplier();
 
-            effectiveThermalSupply = UseChargedPowerOnly == false ? effectiveThrustFraction * getAvailableStableSupply(ResourceSettings.Config.ThermalPowerInMegawatt) : 0;
-            effectiveChargedSupply = canUseChargedPower == true ? effectiveThrustFraction * getAvailableStableSupply(ResourceSettings.Config.ChargedParticleInMegawatt) : 0;
+            // TODO what does this look like
+            //effectiveThermalSupply = UseChargedPowerOnly == false ? effectiveThrustFraction * getAvailableStableSupply(ResourceSettings.Config.ThermalPowerInMegawatt) : 0;
+            //effectiveChargedSupply = canUseChargedPower == true ? effectiveThrustFraction * getAvailableStableSupply(ResourceSettings.Config.ChargedParticleInMegawatt) : 0;
+
+            effectiveThermalSupply = 1000;
+            effectiveChargedSupply = 1000;
+
 
             maximumPowerUsageForPropulsionRatio = UsePlasmaPower
                 ? AttachedReactor.PlasmaPropulsionEfficiency
@@ -2222,14 +2228,14 @@ namespace KIT.Propulsion
 
             UpdateAnimation();
 
-            isOpenCycleCooler = (!isPlasmaNozzle || UseThermalAndChargdPower) && !CheatOptions.IgnoreMaxTemperature;
+            isOpenCycleCooler = (!isPlasmaNozzle || UseThermalAndChargedPower) && !CheatOptions.IgnoreMaxTemperature;
 
             // when in jet mode apply extra cooling from intake air
             if (isOpenCycleCooler && isJet && part.atmDensity > 0)
             {
-                var wasteheatRatio = getResourceBarRatio(ResourceSettings.Config.WasteHeatInMegawatt);
-                airFlowForCooling = max_fuel_flow_rate * part.GetResourceRatio(ResourceSettings.Config.IntakeOxygenAir);
-                consumeFNResourcePerSecond(40 * wasteheatRatio * wasteheatRatio * airFlowForCooling, ResourceSettings.Config.WasteHeatInMegawatt);
+                var wasteheatRatio = resMan.ResourceFillFraction(ResourceName.WasteHeat);
+                airFlowForCooling = max_fuel_flow_rate * resMan.ResourceFillFraction(ResourceName.IntakeOxygenAir);
+                resMan.ConsumeResource(ResourceName.WasteHeat, 40 * wasteheatRatio * wasteheatRatio * airFlowForCooling * GameConstants.ecPerMJ);
             }
 
             // flameout when reactor cannot produce power
@@ -2253,7 +2259,7 @@ namespace KIT.Propulsion
 
                 max_fuel_flow_rate = (_maxISP <= 0.0) ? 0.0 : expectedMaxThrust / (_maxISP * GameConstants.STANDARD_GRAVITY);
 
-                UpdateAtmosphericPresureTreshold();
+                UpdateAtmosphericPressureThreshold();
 
                 var thrustAtmosphereRatio = expectedMaxThrust <= 0 ? 0 : Math.Max(0, expectedMaxThrust - pressureThreshold) / expectedMaxThrust;
 
@@ -2297,7 +2303,7 @@ namespace KIT.Propulsion
 
                 UpdateJetSpoolSpeed();
 
-                if (_currentpropellant_is_jet)
+                if (_currentPropellantIsJet)
                 {
                     if (IsInvalidNumber(jetSpoolRatio))
                         jetSpoolRatio = 0;
@@ -2313,11 +2319,11 @@ namespace KIT.Propulsion
                     max_fuel_flow_rate = 0;
                 }
 
-                attachedReactorFuelRato = AttachedReactor.FuelRato;
+                // attachedReactorFuelRato = AttachedReactor.FuelRato;
 
                 // set engines maximum fuel flow
-                if (IsPositiveValidNumber(max_fuel_flow_rate) && IsPositiveValidNumber(attachedReactorFuelRato))
-                    maxFuelFlowOnEngine = (float)Math.Max(max_fuel_flow_rate * AttachedReactor.FuelRato * attachedReactorFuelRato, 1e-10);
+                if (IsPositiveValidNumber(max_fuel_flow_rate) && IsPositiveValidNumber(AttachedReactor.FuelRato))
+                    maxFuelFlowOnEngine = (float)Math.Max(max_fuel_flow_rate * AttachedReactor.FuelRato * AttachedReactor.FuelRato, 1e-10);
                 else
                     maxFuelFlowOnEngine = 1e-10f;
 

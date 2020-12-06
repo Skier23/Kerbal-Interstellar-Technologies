@@ -94,7 +94,8 @@ namespace KIT.Refinery.Activity
             GUILayout.Label((_nitrogenProductionMassRate * GameConstants.SECONDS_IN_HOUR).ToString("0.000") + " mT/" + Localizer.Format("#LOC_KSPIE_AmmoniaElectrolyzer_perhour"), _value_label, GUILayout.Width(valueWidth));//hour
             GUILayout.EndHorizontal();
 
-            var spareCapacityNitrogen = _part.GetResourceSpareCapacity(ResourceSettings.Config.NitrogenLqd);
+            part.GetConnectedResourceTotals(ResourceSettings.Config.NitrogenLqd.GetHashCode(), out var amount, out var maxAmount);
+            var spareCapacityNitrogen = maxAmount - amount;
 
             GUILayout.BeginHorizontal();
             GUILayout.Label(Localizer.Format("#LOC_KSPIE_AmmoniaElectrolyzer_SpareCapacityNitrogen"), _bold_label, GUILayout.Width(labelWidth));//"Spare Capacity Nitrogen"

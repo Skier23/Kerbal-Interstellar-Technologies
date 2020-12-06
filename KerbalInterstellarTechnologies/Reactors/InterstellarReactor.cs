@@ -1,17 +1,14 @@
 ﻿using KIT.Constants;
 using KIT.Extensions;
 using KIT.External;
-using KIT.Power;
 using KIT.Powermanagement;
 using KIT.Propulsion;
 using KIT.Redist;
 using KIT.Resources;
 using KIT.ResourceScheduler;
-using KIT.Wasteheat;
 using KSP.Localization;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using TweakScale;
@@ -376,7 +373,7 @@ namespace KIT.Reactors
         [KSPField] public bool isConnectedToChargedGenerator;
 
         [KSPField(groupName = GROUP, groupDisplayName = GROUP_TITLE, isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_KSPIE_Reactor_reactorControlWindow"), UI_Toggle(disabledText = "#LOC_KSPIE_Reactor_reactorControlWindow_Hidden", enabledText = "#LOC_KSPIE_Reactor_reactorControlWindow_Shown", affectSymCounterparts = UI_Scene.None)]//Hidden-Shown
-        public bool render_window;
+        public bool render_window = false;
         [KSPField(groupName = GROUP, groupDisplayName = GROUP_TITLE, isPersistant = true, guiActiveEditor = true, guiName = "#LOC_KSPIE_Reactor_startEnabled"), UI_Toggle(disabledText = "#LOC_KSPIE_Reactor_startEnabled_True", enabledText = "#LOC_KSPIE_Reactor_startEnabled_False")]//True-False
         public bool startDisabled;
 
@@ -829,20 +826,21 @@ namespace KIT.Reactors
         }
 
         /*
-        public override void AttachThermalReciever(Guid key, double radius)
+        public void AttachThermalReciever(Guid key, double radius)
         {
             if (!connectedReceivers.ContainsKey(key))
                 connectedReceivers.Add(key, radius);
             UpdateConnectedReceiversStr();
         }
 
-        public override void DetachThermalReciever(Guid key)
+        public void DetachThermalReciever(Guid key)
         {
             if (connectedReceivers.ContainsKey(key))
                 connectedReceivers.Remove(key);
             UpdateConnectedReceiversStr();
         }
         */
+        
 
         public virtual void OnRescale(ScalingFactor factor)
         {
@@ -2874,10 +2872,38 @@ namespace KIT.Reactors
             */
         }
 
-        string KITPartName() => $"{part.partInfo.title}{(fuelModes.Count > 1 ? " (" + fuelModeStr + ")" : "")}";
+        public string KITPartName() => $"{part.partInfo.title}{(fuelModes.Count > 1 ? " (" + fuelModeStr + ")" : "")}";
         // TODO
         //if (similarParts != null && similarParts.Count > 1)
         //    displayName += " " + partNrInList;
 
+
+        // TODO - is this right?
+        // Removed the subclass that it got the implementation from. https://github.com/sswelm/KSP-Interstellar-Extended/blob/19b77a81af0f12f6c081d925e919c2aa2f93e5e0/FNPlugin/Powermanagement/ResourceSuppliableModule.cs
+
+        protected readonly Dictionary<Guid, double> connectedReceivers = new Dictionary<Guid, double>();
+        protected readonly Dictionary<Guid, double> connectedReceiversFraction = new Dictionary<Guid, double>();
+
+        public void AttachThermalReciever(Guid key, double radius)
+        {
+            if (!connectedReceivers.ContainsKey(key))
+                connectedReceivers.Add(key, radius);
+        }
+
+        public void DetachThermalReciever(Guid key)
+        {
+            if (connectedReceivers.ContainsKey(key))
+                connectedReceivers.Remove(key);
+        }
+
+        public double GetFractionThermalReciever(Guid key)
+        {
+            if (connectedReceiversFraction.TryGetValue(key, out var result))
+                return result;
+            else
+                return 0;
+        }
+
+        // string IKITMod.KITPartName() => part.partInfo.title;
     }
 }

@@ -981,6 +981,8 @@ namespace KIT.Propulsion
             modifiedThrotte = ModifiedThrottle;
             modifiedMaxThrottlePower = maxEffectivePower * modifiedThrotte;
 
+            throw new Exception("need to implement the below");
+            /*
             totalPowerSupplied = getTotalPowerSupplied(ResourceSettings.Config.ElectricPowerInMegawatt);
             megaJoulesBarRatio = getResourceBarRatio(ResourceSettings.Config.ElectricPowerInMegawatt);
 
@@ -1138,6 +1140,7 @@ namespace KIT.Propulsion
                 vacuumPlasmaResource.maxAmount = vacuumPlasmaResourceAmount;
                 part.RequestResource(ResourceSettings.Config.VacuumPlasma, -vacuumPlasmaResource.maxAmount);
             }
+            */
         }
 
         public string KITPartName() => $"{part.partInfo.title}{(CurrentPropellant != null ? " (" + CurrentPropellant.PropellantGUIName + ")" : "")}";

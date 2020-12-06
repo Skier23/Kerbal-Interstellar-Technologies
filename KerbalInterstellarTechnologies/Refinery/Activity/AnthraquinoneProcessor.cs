@@ -1,6 +1,7 @@
 ﻿using KIT.Constants;
 using KIT.Extensions;
 using KIT.Resources;
+using KIT.ResourceScheduler;
 using KSP.Localization;
 using System;
 using System.Linq;
@@ -68,7 +69,7 @@ namespace KIT.Refinery.Activity
             _hydrogenPeroxideDensity = PartResourceLibrary.Instance.GetDefinition(_hydrogenPeroxideResourceName).density;
         }
 
-        public void UpdateFrame(double rateMultiplier, double powerFraction, double productionModifier, bool allowOverflow, bool isStartup = false)
+        public void UpdateFrame(IResourceManager resMan, double rateMultiplier, double powerFraction, double productionModifier, bool allowOverflow, bool isStartup = false)
         {
             _effectiveMaxPower = PowerRequirements * productionModifier;
 
@@ -109,7 +110,7 @@ namespace KIT.Refinery.Activity
                 _hydrogenConsumptionRate = _part.RequestResource(_hydrogenResourceName, hydrogenConsumptionRate / _hydrogenDensity) * _hydrogenDensity;
                 _oxygenConsumptionRate = _part.RequestResource(_oxygenResourceName, oxygenConsumptionRate / _oxygenDensity)  * _oxygenDensity;
 
-                var combinedConsumptionRate = (_hydrogenConsumptionRate + _oxygenConsumptionRate) * fixedDeltaTime / _hydrogenPeroxideDensity;
+                var combinedConsumptionRate = (_hydrogenConsumptionRate + _oxygenConsumptionRate) / _hydrogenPeroxideDensity;
 
                 _hydrogenPeroxideProductionRate = -_part.RequestResource(_hydrogenPeroxideResourceName, -combinedConsumptionRate)  * _hydrogenPeroxideDensity;
             }

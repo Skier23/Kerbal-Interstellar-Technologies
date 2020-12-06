@@ -1,6 +1,7 @@
 ﻿using KIT.Constants;
 using KIT.Extensions;
 using KIT.Resources;
+using KIT.ResourceScheduler;
 using KSP.Localization;
 using System;
 using System.Linq;
@@ -37,7 +38,7 @@ namespace KIT.Refinery.Activity
             _vessel = localPart.vessel;
         }
 
-        public void UpdateFrame(double rateMultiplier, double powerFraction, double productionModifier, bool allowOverflow, bool isStartup = false)
+        public void UpdateFrame(IResourceManager resMan, double rateMultiplier, double powerFraction, double productionModifier, bool allowOverflow, bool isStartup = false)
         {
             _current_power = PowerRequirements * rateMultiplier;
 

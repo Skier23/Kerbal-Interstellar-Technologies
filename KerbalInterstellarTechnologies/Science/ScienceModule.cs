@@ -598,7 +598,7 @@ namespace KIT
 
                 var productionModifier = global_rate_multipliers;
                 global_rate_multipliers = global_rate_multipliers * electrical_power_ratio;
-                reprocessor.UpdateFrame(global_rate_multipliers, electrical_power_ratio, productionModifier, true);
+                reprocessor.UpdateFrame(resMan, global_rate_multipliers, electrical_power_ratio, productionModifier, true);
 
                 if (reprocessor.getActinidesRemovedPerHour() > 0)
                     reprocessing_rate_f = reprocessor.getRemainingAmountToReprocess() / reprocessor.getActinidesRemovedPerHour();
