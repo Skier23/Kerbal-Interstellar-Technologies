@@ -202,7 +202,6 @@ namespace KIT.ResourceScheduler
                 {
                     UnityEngine.Profiling.Profiler.BeginSample($"ResourceManager.ExecuteKITModules.{mod.KITPartName()}");
                     mod.KITFixedUpdate(this);
-                    UnityEngine.Profiling.Profiler.EndSample();
                 }
                 catch (Exception ex)
                 {
@@ -212,6 +211,10 @@ namespace KIT.ResourceScheduler
                         // XXX - part names and all that.
                         Debug.Log($"[KITResourceManager.ExecuteKITModules] Exception when processing [{mod.KITPartName()}, {(mod as PartModule).ClassName}]: {ex.ToString()}");
                     }
+                }
+                finally
+                {
+                    UnityEngine.Profiling.Profiler.EndSample();
                 }
 
                 if (vesselResources.VesselModified())
@@ -264,8 +267,20 @@ namespace KIT.ResourceScheduler
                     // Hasn't had it's KITFixedUpdate() yet? call that first.
                     fixedUpdateCalledMods.Add(KITMod);
                     UnityEngine.Profiling.Profiler.BeginSample($"ResourceManager.CallVariableSuppliers.Init.{KITMod.KITPartName()}");
-                    KITMod.KITFixedUpdate(this);
-                    UnityEngine.Profiling.Profiler.EndSample();
+
+                    try
+                    {
+                        KITMod.KITFixedUpdate(this);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.Log($"[KITResourceManager.CallVariableSuppliers] Exception when processing [{KITMod.KITPartName()}, {(mod as PartModule).ClassName}]: {ex.ToString()}");
+                    }
+                    finally
+                    {
+                        UnityEngine.Profiling.Profiler.EndSample();
+                    }
+                    
                 }
 
                 double perSecondAmount = originalAmount * (1 - (obtainedAmount / originalAmount));
