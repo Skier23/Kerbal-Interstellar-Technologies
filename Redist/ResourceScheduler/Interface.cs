@@ -65,6 +65,7 @@ namespace KIT.ResourceScheduler
         /// </summary>
         /// <returns>The ICheatOptions associated with this resource manager.</returns>
         ICheatOptions CheatOptions();
+
     }
 
     public interface IResourceScheduler
