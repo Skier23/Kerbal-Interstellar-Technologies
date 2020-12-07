@@ -162,10 +162,13 @@ namespace KIT.ResourceScheduler
             tappedOutMods.Clear();
             fixedUpdateCalledMods.Clear();
 
-            if (modsCurrentlyRunning.Count > 0 && complainedToWaiterAboutOrder == false)
+            if (modsCurrentlyRunning.Count > 0)
             {
-                Debug.Log($"[ResourceManager.ExecuteKITModules] modsCurrentlyRunning.Count != 0. there may be resource production / consumption issues.");
-                complainedToWaiterAboutOrder = true;
+                if(complainedToWaiterAboutOrder == false)
+                    Debug.Log($"[ResourceManager.ExecuteKITModules] URGENT modsCurrentlyRunning.Count != 0. there may be resource production / consumption issues.");
+                else
+                    complainedToWaiterAboutOrder = true;
+
                 modsCurrentlyRunning.Clear();
             }
 
@@ -197,7 +200,9 @@ namespace KIT.ResourceScheduler
 
                 try
                 {
+                    UnityEngine.Profiling.Profiler.BeginSample($"ResourceManager.ExecuteKITModules.{mod.KITPartName()}");
                     mod.KITFixedUpdate(this);
+                    UnityEngine.Profiling.Profiler.EndSample();
                 }
                 catch (Exception ex)
                 {
@@ -258,13 +263,17 @@ namespace KIT.ResourceScheduler
                 {
                     // Hasn't had it's KITFixedUpdate() yet? call that first.
                     fixedUpdateCalledMods.Add(KITMod);
+                    UnityEngine.Profiling.Profiler.BeginSample($"ResourceManager.CallVariableSuppliers.Init.{KITMod.KITPartName()}");
                     KITMod.KITFixedUpdate(this);
+                    UnityEngine.Profiling.Profiler.EndSample();
                 }
 
                 double perSecondAmount = originalAmount * (1 - (obtainedAmount / originalAmount));
 
                 try
                 {
+                    UnityEngine.Profiling.Profiler.BeginSample($"ResourceManager.CallVariableSuppliers.ProvideResource.{KITMod.KITPartName()}");
+
                     var canContinue = mod.ProvideResource(this, resource, perSecondAmount);
                     if (!canContinue) tappedOutMods.Add(mod);
                 }
@@ -272,6 +281,10 @@ namespace KIT.ResourceScheduler
                 {
                     if (UseThisToHelpWithTesting) throw;
                     Debug.Log($"[KITResourceManager.callVariableSuppliers] calling KITMod {KITMod.KITPartName()} resulted in {ex.ToString()}");
+                }
+                finally
+                {
+                    UnityEngine.Profiling.Profiler.EndSample();
                 }
 
                 var tmp = Math.Min(currentResources[resource], perSecondAmount);
