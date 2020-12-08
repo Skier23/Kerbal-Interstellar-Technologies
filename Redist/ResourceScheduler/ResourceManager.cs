@@ -9,6 +9,29 @@ using UnityEngine;
 
 namespace KIT.ResourceScheduler
 {
+    public struct ResourceProduction : IResourceProduction
+    {
+        internal double _currentlyRequested;
+        internal double _currentlySupplied;
+        internal double _previouslyRequested;
+        internal double _previouslySupplied;
+
+        public double currentlyRequested() => _currentlyRequested;
+        public double currentSupplied() => _currentlySupplied;
+
+        public double previousUnmetDemand() => Math.Max(0, _previouslyRequested - _previouslySupplied);
+        public bool previousDemandMet() => _previouslySupplied >= _previouslyRequested;
+
+        public double previouslyRequested() => _previouslyRequested;
+        public double previouslySupplied() => _previouslySupplied;
+
+        public double previousSurplus() => Math.Max(0, _previouslySupplied - _previouslyRequested);
+
+        public bool previousDataSupplied() => _previouslySupplied != 0 && _previouslyRequested != 0;
+    }
+
+    /// <summary>
+
     public class ResourceManager : IResourceManager, IResourceScheduler
     {
         private ICheatOptions myCheatOptions = RealCheatOptions.Instance;
@@ -57,6 +80,9 @@ namespace KIT.ResourceScheduler
         {
             KITResourceSettings.ValidateResource(resource);
 
+            if (resource >= ResourceName.ElectricCharge && resource <= ResourceName.WasteHeat)
+                resourceProductionStats[resource - ResourceName.ElectricCharge]._currentlyRequested += wanted;
+            
             if (!inExecuteKITModules)
             {
                 Debug.Log("[KITResourceManager.ConsumeResource] don't do this.");
@@ -80,6 +106,10 @@ namespace KIT.ResourceScheduler
             var tmp = Math.Min(currentResources[resource], modifiedAmount);
             obtainedAmount += tmp;
             currentResources[resource] -= tmp;
+
+            if (resource >= ResourceName.ElectricCharge && resource <= ResourceName.WasteHeat && tmp > 0)
+                resourceProductionStats[resource - ResourceName.ElectricCharge]._currentlySupplied += tmp;
+
             if (obtainedAmount >= modifiedAmount)
             {
                 resourceFlow[(int)resource].Add(new KeyValuePair<IKITMod, double>(modsCurrentlyRunning.Last(), -wanted));
@@ -93,7 +123,8 @@ namespace KIT.ResourceScheduler
             obtainedAmount = wanted * (obtainedAmount / modifiedAmount);
             obtainedAmount = CallVariableSuppliers(resource, obtainedAmount, wanted);
 
-            //return obtainedAmount;
+            // We do not need to account for _currentlySupplied here, as the modules called above will call
+            // ProduceResource which credits the _currentlySupplied field here.
 
             // is it close enough to being fully requested? (accounting for precision issues)
             var result = (modifiedAmount * fudgeFactor <= obtainedAmount) ? wanted : wanted * (obtainedAmount / modifiedAmount);
@@ -117,6 +148,9 @@ namespace KIT.ResourceScheduler
         void IResourceManager.ProduceResource(ResourceName resource, double amount, double max = -1)
         {
             KITResourceSettings.ValidateResource(resource);
+
+            if (resource >= ResourceName.ElectricCharge && resource <= ResourceName.WasteHeat)
+                resourceProductionStats[resource - ResourceName.ElectricCharge]._currentlySupplied += amount;
 
             //Debug.Log($"ProduceResource {resource} - {amount}");
 
@@ -160,6 +194,17 @@ namespace KIT.ResourceScheduler
 
             currentResources = resourceAmounts;
             currentMaxResources = resourceMaxAmounts;
+
+            // Cycle the resource tracking data over.
+            for(int i = 0; i < (int)(ResourceName.WasteHeat - ResourceName.ElectricCharge); i++)
+            {
+                resourceProductionStats[i]._previouslyRequested = resourceProductionStats[i]._currentlyRequested;
+                resourceProductionStats[i]._previouslySupplied = resourceProductionStats[i]._currentlySupplied;
+
+                resourceProductionStats[i]._currentlyRequested = resourceProductionStats[i]._currentlySupplied =
+                    resourceProductionStats[i]._previouslyRequested = resourceProductionStats[i]._previouslySupplied = 
+                    0;
+            }
 
             tappedOutMods.Clear();
             fixedUpdateCalledMods.Clear();
@@ -335,7 +380,10 @@ namespace KIT.ResourceScheduler
 
         public IResourceProduction ResourceProductionStats(ResourceName resourceIdentifier)
         {
-            throw new NotImplementedException();
+            if (resourceIdentifier >= ResourceName.ElectricCharge && resourceIdentifier <= ResourceName.WasteHeat)
+                return resourceProductionStats[resourceIdentifier - ResourceName.ElectricCharge];
+
+            return null;
         }
         #endregion
 

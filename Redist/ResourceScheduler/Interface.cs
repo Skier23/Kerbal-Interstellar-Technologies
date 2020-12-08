@@ -58,28 +58,6 @@ namespace KIT.ResourceScheduler
         double currentSupplied();
     }
 
-    public struct ResourceProduction : IResourceProduction
-    {
-        private double _currentlyRequested;
-        private double _currentlySupplied;
-        private double _previouslyRequested;
-        private double _previouslySupplied;
-
-        public double currentlyRequested() => _currentlyRequested;
-        public double currentSupplied() => _currentlySupplied;
-
-        public double previousUnmetDemand() => Math.Max(0, _previouslyRequested - _previouslySupplied);
-        public bool previousDemandMet() =>  _previouslySupplied >= _previouslyRequested;
-
-        public double previouslyRequested() => _previouslyRequested;
-        public double previouslySupplied() => _previouslySupplied;
-
-        public double previousSurplus() => Math.Max(0, _previouslySupplied - _previouslyRequested);
-
-        public bool previousDataSupplied() => _previouslySupplied != 0 && _previouslyRequested != 0;
-    }
-
-    /// <summary>
     /// This interface is passed to the part modules in IKITMod.KITFixedUpdate. It allows the 
     /// production and consumption of resources, and access to some wrapper variables to avoid global
     /// variable access.
