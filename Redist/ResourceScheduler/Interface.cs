@@ -17,45 +17,45 @@ namespace KIT.ResourceScheduler
         /// Does this have previous update data available? 
         /// </summary>
         /// <returns>May be false at any time for any reason.</returns>
-        bool previousDataSupplied();
+        bool PreviousDataSupplied();
         /// <summary>
-        /// previouslyRequested is the total of the resource previously requested.
+        /// PreviouslyRequested is the total of the resource previously requested.
         /// </summary>
         /// <returns>previouslyRequested is the total of the resource previously requested.</returns>
-        double previouslyRequested();
+        double PreviouslyRequested();
         /// <summary>
-        /// previouslySupplied total of the resource previously supplied.
+        /// PreviouslySupplied total of the resource previously supplied.
         /// </summary>
         /// <returns>The amount of the resource that was previously supplied in an update</returns>
-        double previouslySupplied();
+        double PreviouslySupplied();
         /// <summary>
-        /// previousDemandMet indicates if in the last update, we were able to supply all the requested demand of a resource.
+        /// PreviousDemandMet indicates if in the last update, we were able to supply all the requested demand of a resource.
         /// </summary>
         /// <returns>
         /// returns true if previouslySupplied >= previouslyRequested, false if all demands were met.
         /// </returns>
-        bool previousDemandMet();
+        bool PreviousDemandMet();
         /// <summary>
         /// Returns the surplus resource production in the previous update. The minimum will be 0 
         /// </summary>
         /// <returns>Math.Max(0, previouslySupplied - previouslyRequested) for the most part.</returns>
-        double previousSurplus();
+        double PreviousSurplus();
         /// <summary>
         /// Returns the unmet demand in the previous update. 
         /// </summary>
         /// <returns>Math.Max(0, previouslyRequested - previouslySupplied) for the most part.</returns>
-        double previousUnmetDemand();
+        double PreviousUnmetDemand();
 
         /// <summary>
-        /// currentlyRequested is the total so far requested in this Update.
+        /// CurrentlyRequested is the total so far requested in this Update.
         /// </summary>
         /// <returns>resources requested in this KITFixedUpdate()</returns>
-        double currentlyRequested();
+        double CurrentlyRequested();
         /// <summary>
-        /// currentlySupplied is the total so far that has been supplied in this 
+        /// CurrentlySupplied is the total so far that has been supplied in this 
         /// </summary>
         /// <returns></returns>
-        double currentSupplied();
+        double CurrentSupplied();
     }
 
     /// This interface is passed to the part modules in IKITMod.KITFixedUpdate. It allows the 

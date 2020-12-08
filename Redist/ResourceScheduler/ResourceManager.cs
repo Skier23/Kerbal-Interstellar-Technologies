@@ -16,18 +16,18 @@ namespace KIT.ResourceScheduler
         internal double _previouslyRequested;
         internal double _previouslySupplied;
 
-        public double currentlyRequested() => _currentlyRequested;
-        public double currentSupplied() => _currentlySupplied;
+        public double CurrentlyRequested() => _currentlyRequested;
+        public double CurrentSupplied() => _currentlySupplied;
 
-        public double previousUnmetDemand() => Math.Max(0, _previouslyRequested - _previouslySupplied);
-        public bool previousDemandMet() => _previouslySupplied >= _previouslyRequested;
+        public double PreviousUnmetDemand() => Math.Max(0, _previouslyRequested - _previouslySupplied);
+        public bool PreviousDemandMet() => _previouslySupplied >= _previouslyRequested;
 
-        public double previouslyRequested() => _previouslyRequested;
-        public double previouslySupplied() => _previouslySupplied;
+        public double PreviouslyRequested() => _previouslyRequested;
+        public double PreviouslySupplied() => _previouslySupplied;
 
-        public double previousSurplus() => Math.Max(0, _previouslySupplied - _previouslyRequested);
+        public double PreviousSurplus() => Math.Max(0, _previouslySupplied - _previouslyRequested);
 
-        public bool previousDataSupplied() => _previouslySupplied != 0 && _previouslyRequested != 0;
+        public bool PreviousDataSupplied() => _previouslySupplied != 0 && _previouslyRequested != 0;
     }
 
     /// <summary>
