@@ -2694,7 +2694,6 @@ namespace KIT.Reactors
             // KITFixedUpdate always runs before each power draw attempt.
             electricChargeGeneratedLastUpdate = electricChargeBeingSuppliedThisUpdate;
             electricChargeMissingLastUpdate = electricChargeBeingRequestedThisUpdate - electricChargeBeingSuppliedThisUpdate;
-
             electricChargeBeingRequestedThisUpdate = electricChargeBeingSuppliedThisUpdate = 0;
 
             if (!IsEnabled)
@@ -2744,8 +2743,9 @@ namespace KIT.Reactors
             
             
             maximumPower = MaximumPower;
+            UpdateGeeforceModifier();
 
-            if (IsEnabled && maximumPower > 0) GeneratePower(resMan);
+            if (IsEnabled && maximumPower > 0) CalculateMaxPowerOutput(resMan);
 
             UpdatePlayedSound();
 
@@ -2753,12 +2753,10 @@ namespace KIT.Reactors
             
         }
 
-        private void GeneratePower(IResourceManager resMan)
+        private void CalculateMaxPowerOutput(IResourceManager resMan)
         {
-            /*
+            // XXX todo. fill in the max we want.
             maxPowerToSupply = Math.Max(maximumPower, 0);
-
-            UpdateGeeforceModifier();
 
             if (hasOverheatEffects && !CheatOptions.IgnoreMaxTemperature)
             {
@@ -2829,8 +2827,6 @@ namespace KIT.Reactors
             maximumChargedPower = MaximumChargedPower;
             maximumThermalPower = MaximumThermalPower;
 
-
-
             var maxStoredGeneratorEnergyRequestedRatio = Math.Max(Math.Max(storedGeneratorThermalEnergyRequestRatio, storedGeneratorPlasmaEnergyRequestRatio), storedGeneratorChargedEnergyRequestRatio);
             var maxThrottleRatio = Math.Max(Math.Max(thermalThrottleRatio, plasmaThrottleRatio), chargedThrottleRatio);
 
@@ -2839,6 +2835,8 @@ namespace KIT.Reactors
             maxChargedToSupplyPerSecond = maximumChargedPower * stored_fuel_ratio * geeForceModifier * overheatModifier * powerAccessModifier;
             requestedChargedToSupplyPerSecond = maxChargedToSupplyPerSecond * power_request_ratio * maximum_charged_request_ratio;
 
+            /*
+            
             var chargedParticlesManager = getManagerForVessel(ResourceSettings.Config.ChargedParticleInMegawatt);
             var thermalHeatManager = getManagerForVessel(ResourceSettings.Config.ThermalPowerInMegawatt);
 
