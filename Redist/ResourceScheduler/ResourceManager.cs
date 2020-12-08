@@ -36,6 +36,8 @@ namespace KIT.ResourceScheduler
             {
                 resourceFlow[i] = new List<KeyValuePair<IKITMod, double>>(64);
             }
+
+            resourceProductionStats = new ResourceProduction[(int)(ResourceName.WasteHeat - ResourceName.ElectricCharge)];
         }
 
         #region IResourceManager implementation
@@ -112,7 +114,7 @@ namespace KIT.ResourceScheduler
         /// </summary>
         /// <param name="resource">Resource to produce</param>
         /// <param name="amount">Amount you are providing</param>
-        void IResourceManager.ProduceResource(ResourceName resource, double amount)
+        void IResourceManager.ProduceResource(ResourceName resource, double amount, double max = -1)
         {
             KITResourceSettings.ValidateResource(resource);
 
@@ -327,6 +329,13 @@ namespace KIT.ResourceScheduler
         double IResourceManager.ResourceFillFraction(ResourceName resourceIdentifier)
         {
             return currentResources[resourceIdentifier] / currentMaxResources[resourceIdentifier];
+        }
+
+        private ResourceProduction[] resourceProductionStats;
+
+        public IResourceProduction ResourceProductionStats(ResourceName resourceIdentifier)
+        {
+            throw new NotImplementedException();
         }
         #endregion
 

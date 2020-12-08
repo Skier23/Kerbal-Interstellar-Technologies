@@ -9,6 +9,77 @@ using System.Threading.Tasks;
 namespace KIT.ResourceScheduler
 {
     /// <summary>
+    /// ResourceProduction tracks what was supplied in a previous update. Code must assume that the previous entries can be 0  
+    /// </summary>
+    public interface IResourceProduction
+    {
+        /// <summary>
+        /// Does this have previous update data available? 
+        /// </summary>
+        /// <returns>May be false at any time for any reason.</returns>
+        bool previousDataSupplied();
+        /// <summary>
+        /// previouslyRequested is the total of the resource previously requested.
+        /// </summary>
+        /// <returns>previouslyRequested is the total of the resource previously requested.</returns>
+        double previouslyRequested();
+        /// <summary>
+        /// previouslySupplied total of the resource previously supplied.
+        /// </summary>
+        /// <returns>The amount of the resource that was previously supplied in an update</returns>
+        double previouslySupplied();
+        /// <summary>
+        /// previousDemandMet indicates if in the last update, we were able to supply all the requested demand of a resource.
+        /// </summary>
+        /// <returns>
+        /// returns true if previouslySupplied >= previouslyRequested, false if all demands were met.
+        /// </returns>
+        bool previousDemandMet();
+        /// <summary>
+        /// Returns the surplus resource production in the previous update. The minimum will be 0 
+        /// </summary>
+        /// <returns>Math.Max(0, previouslySupplied - previouslyRequested) for the most part.</returns>
+        double previousSurplus();
+        /// <summary>
+        /// Returns the unmet demand in the previous update. 
+        /// </summary>
+        /// <returns>Math.Max(0, previouslyRequested - previouslySupplied) for the most part.</returns>
+        double previousUnmetDemand();
+
+        /// <summary>
+        /// currentlyRequested is the total so far requested in this Update.
+        /// </summary>
+        /// <returns>resources requested in this KITFixedUpdate()</returns>
+        double currentlyRequested();
+        /// <summary>
+        /// currentlySupplied is the total so far that has been supplied in this 
+        /// </summary>
+        /// <returns></returns>
+        double currentSupplied();
+    }
+
+    public struct ResourceProduction : IResourceProduction
+    {
+        private double _currentlyRequested;
+        private double _currentlySupplied;
+        private double _previouslyRequested;
+        private double _previouslySupplied;
+
+        public double currentlyRequested() => _currentlyRequested;
+        public double currentSupplied() => _currentlySupplied;
+
+        public double previousUnmetDemand() => Math.Max(0, _previouslyRequested - _previouslySupplied);
+        public bool previousDemandMet() =>  _previouslySupplied >= _previouslyRequested;
+
+        public double previouslyRequested() => _previouslyRequested;
+        public double previouslySupplied() => _previouslySupplied;
+
+        public double previousSurplus() => Math.Max(0, _previouslySupplied - _previouslyRequested);
+
+        public bool previousDataSupplied() => _previouslySupplied != 0 && _previouslyRequested != 0;
+    }
+
+    /// <summary>
     /// This interface is passed to the part modules in IKITMod.KITFixedUpdate. It allows the 
     /// production and consumption of resources, and access to some wrapper variables to avoid global
     /// variable access.
@@ -30,7 +101,8 @@ namespace KIT.ResourceScheduler
         /// </summary>
         /// <param name="name">Resource Name</param>
         /// <param name="amount">Amount of resource to produce per second</param>
-        void ProduceResource(ResourceName resource, double amount);
+        /// <param name="max">The maximum that this part can produce of this resource, in total. If -1, then it will add up all the times the resource has been produced.</param>
+        void ProduceResource(ResourceName resource, double amount, double max = -1);
 
         /// <summary>
         /// Checks to see how much storage is available for the given resource, returning 0 if there is none.
@@ -65,6 +137,8 @@ namespace KIT.ResourceScheduler
         /// </summary>
         /// <returns>The ICheatOptions associated with this resource manager.</returns>
         ICheatOptions CheatOptions();
+
+        IResourceProduction ResourceProductionStats(ResourceName resourceIdentifier);
 
     }
 

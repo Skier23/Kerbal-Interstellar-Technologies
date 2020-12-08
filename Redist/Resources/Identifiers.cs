@@ -16,7 +16,13 @@ namespace KIT.Resources
     public enum ResourceName
     {
         Unknown,
+
+        // We will track vessel wide stats between ElectricCharge and WasteHeat
         ElectricCharge,
+        ThermalPower,
+        ChargedParticle,
+        WasteHeat,
+
         LiquidFuel,
         Oxidizer,
         MonoPropellant,
@@ -81,11 +87,7 @@ namespace KIT.Resources
         IntakeOxygenAir,
         IntakeLiquid,
         IntakeAtmosphere,
-
-        ChargedParticle,
-        ThermalPower,
-
-        WasteHeat,
+        
         EndResource,
     }
 
