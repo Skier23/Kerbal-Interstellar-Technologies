@@ -337,7 +337,7 @@ namespace KIT
 
         public ApplicationLauncherButton InitializeApplicationButton()
         {
-            appIcon = GameDatabase.Instance.GetTexture("Kerbal-Interstellar-Technologies/Category/WarpPlugin", false);
+            _appIcon = GameDatabase.Instance.GetTexture("Kerbal-Interstellar-Technologies/Category/WarpPlugin", false);
 
             if (_appIcon == null) return null;
 
