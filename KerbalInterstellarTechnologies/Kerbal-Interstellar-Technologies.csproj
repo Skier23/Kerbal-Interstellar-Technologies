@@ -84,6 +84,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Animate\AnimatedContainerContent.cs" />
     <Compile Include="Animate\FNLightSwitch.cs" />
     <Compile Include="Beamedpower\BeamedPowerTransmitterTag.cs" />
     <Compile Include="Beamedpower\InterstellarBeamedPowerHelper.cs" />
@@ -155,7 +156,6 @@
     <Compile Include="Refinery\Activity\AtmosphereProcessor.cs" />
     <Compile Include="Refinery\RefineryActivity.cs" />
     <Compile Include="Refinery\Activity\PartialMethaneOxidation.cs" />
-    <Compile Include="Powermanagement\InterstellarPowerSupply.cs" />
     <Compile Include="Refinery\Activity\RegolithProcessor.cs" />
     <Compile Include="Refinery\Activity\OceanProcessor.cs" />
     <Compile Include="Refinery\Activity\SolarWindProcessor.cs" />
@@ -171,7 +171,6 @@
     <Compile Include="Refinery\Activity\WaterGasShift.cs" />
     <Compile Include="Refinery\Activity\CarbonDioxideElectrolyzer.cs" />
     <Compile Include="Science\FNSunModuleScienceExperiment.cs" />
-    <Compile Include="Science\InterstellarResourceScienceModule.cs" />
     <Compile Include="Refinery\Activity\HaberProcess.cs" />
     <Compile Include="Refinery\Activity\PeroxideProcess.cs" />
     <Compile Include="Reactors\InterstellarCatalysedFissionFusion.cs" />
@@ -252,4 +251,11 @@
     <Folder Include="Collectors\" />
     <Folder Include="ResourceScheduler\" />
   </ItemGroup>
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y $(TargetDir)*KerbalInterstellar* $(SolutionDir)..\GameData\Kerbal-Interstellar-Technologies\Plugins</PostBuildEvent>
+  </PropertyGroup>
 </Project>
